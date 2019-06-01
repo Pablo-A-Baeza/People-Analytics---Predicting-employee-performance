@@ -4,52 +4,58 @@ library(QuantPsyc)
 library(likert)
 library(Hmisc)
 
-customer_data <- read.table(("Customer sat N2507.csv"), header = T, sep = ",")
-attach(customer_data)
+survey <- read.table(("Customer sat N2507.csv"), header = T, sep = ",")
+attach(survey)
 
 
 # ----- Data Analysis ----- #
 
 # Understanding our data
-str(customer_data)
-names(customer_data)
-nrow(customer_data)
-ncol(customer_data)
-fix(customer_data)
+str(survey)
+names(survey)
+nrow(survey)
+ncol(survey)
+fix(survey)
 
 # ----- Likert data analysis ----- #
 
-likert_data <- customer_data[1:4] 
+likert_sat <- survey[1:4] 
+likert_loyalty <- survey[6]
+likert_invest <- survey[7]
+my_list <- list(likert_sat, likert_loyalty, likert_invest)
 
 # Response frequencies
-r_fr <- response.frequencies(likert_data) %>% round(2) %>% as.data.frame
-r_fr
+responses_fr <- lapply(my_list, response.frequencies)
+responses_fr
 
-likert_data <- likert_data %>%
+# Sales-person competency (Sat 1,2,3,4)
+likert_sat <- likert_sat %>%
   mutate_if(is.numeric, as.factor)
 
 summary(likert_data)
 
-likert_data_results <- likert(likert_data)
-plot(likert_data_results, group.order = c("Sat1", "Sat2", "Sat3", "Sat4")) # Note. For percent numbers, responses are grouped into "low", "neutral", and "high"
+likert_data_results <- likert(likert_sat)
+plot(likert_data_results, group.order = c("Sat1", "Sat2", "Sat3", "Sat4"))
+
+#Note. For percent numbers, responses are grouped into "low", "neutral", and "high"
 
 # Total number of complete cases
-data_complete <- nrow(na.omit(likert_data))
+data_complete <- nrow(na.omit(likert_sat))
 
 # Total number of incomplete cases by variable
-colSums(is.na(likert_data))
-data_missing <- sum(colSums(is.na(likert_data))) # Total number
+colSums(is.na(likert_sat))
+data_missing <- sum(colSums(is.na(likert_sat))) # Total number
 
 data_summary <- cbind(data_complete, data_missing)
 rownames(data_summary) <- paste("Survey reponses",sep = " ")
 data_summary
 
 # Reliability analysis
-likert_data <- likert_data %>%
+likert_sat <- likert_sat %>%
   mutate_if(is.factor, as.numeric)
 
 # Cronbach's alpha
-cronbachs_alpha <- alpha(likert_data)
+cronbachs_alpha <- alpha(likert_sat)
 cronbachs_alpha_summary <- cronbachs_alpha$item.stats
 cronbachs_alpha_r <- round(cronbachs_alpha$total$raw_alpha, 3) 
 cronbachs_alpha_r # Note. Reliability values values are min .7. Our scale is very reliable :D
@@ -69,6 +75,25 @@ cronbachs_alpha_corrected_summary <- ifelse(cronbachs_alpha_corrected <
                                               0.3, "BAD", "OK")
 
 cronbachs_alpha_corrected_summary # Note. None of items present a a correlation lower than .3 :D
+
+
+# Customer loyalty (Custoloyalty)
+likert_loyalty <- likert_loyalty %>%
+  mutate_if(is.numeric, as.factor)
+
+summary(likert_loyalty)
+
+likert_loyalty_results <- likert(likert_loyalty)
+plot(likert_loyalty_results)
+
+# Complete cases
+data_complete <- nrow(na.omit(likert_loyalty))
+
+# Missing cases
+data_missing <- colSums(is.na(likert_loyalty))
+
+# Data summary
+cbind(data_complete, data_missing)
 
 
 #shows data with columns
