@@ -2,7 +2,7 @@ library(tidyverse)
 library(psych)
 library(QuantPsyc)
 library(likert)
-library(Hmisc)
+library(QuantPsyc)
 
 survey <- read.table(("Customer sat N2507.csv"), header = T, sep = ",")
 attach(survey)
@@ -28,14 +28,14 @@ my_list <- list(likert_sat, likert_loyalty, likert_invest)
 responses_fr <- lapply(my_list, response.frequencies)
 responses_fr
 
-# Sales-person competency (Sat 1,2,3,4)
+# -- Sales-person competency (Sat 1,2,3,4) -- #
 likert_sat <- likert_sat %>%
   mutate_if(is.numeric, as.factor)
 
 summary(likert_data)
 
 likert_data_results <- likert(likert_sat)
-plot(likert_data_results, group.order = c("Sat1", "Sat2", "Sat3", "Sat4"))
+likert_sat_p <- plot(likert_data_results, group.order = c("Sat1", "Sat2", "Sat3", "Sat4"))
 
 #Note. For percent numbers, responses are grouped into "low", "neutral", and "high"
 
@@ -77,14 +77,14 @@ cronbachs_alpha_corrected_summary <- ifelse(cronbachs_alpha_corrected <
 cronbachs_alpha_corrected_summary # Note. None of items present a a correlation lower than .3 :D
 
 
-# Customer loyalty (Custoloyalty)
+# -- Customer loyalty (Custoloyalty) -- #
 likert_loyalty <- likert_loyalty %>%
   mutate_if(is.numeric, as.factor)
 
 summary(likert_loyalty)
 
 likert_loyalty_results <- likert(likert_loyalty)
-plot(likert_loyalty_results)
+likert_loyalty_p <- plot(likert_loyalty_results)
 
 # Complete cases
 data_complete <- nrow(na.omit(likert_loyalty))
@@ -96,28 +96,60 @@ data_missing <- colSums(is.na(likert_loyalty))
 cbind(data_complete, data_missing)
 
 
-#shows data with columns
+# -- Customer invest (InvestMore) -- #
+likert_invest <- likert_invest %>%
+  mutate_if(is.numeric, as.factor)
 
-fix(Custom)
+summary(likert_invest)
 
-names(Custom)
+likert_invest_results <- likert(likert_invest)
+likert_invest_p <- plot(likert_invest_results)
 
-#[1] "Sat1"             "Sat2"             "Sat3"             "Sat4"            
-#[5] "CustSatMean"          "Custloyalty"      "INvestMore"       "SexOfSalesperson"
+# Complete cases
+data_complete <- nrow(na.omit(likert_invest))
+
+# Missing cases
+data_missing <- colSums(is.na(likert_invest))
+
+# Data summary
+cbind(data_complete, data_missing)
 
 
-#make the dataset live
-attach(Custom)
+# ----- Regression analysis ----- #
 
+# -- Customer loyalty = DV ; Sales-person competency = IV -- #
+
+model_sat <- lm(Custloyalty ~ Sat1 + Sat2 + Sat3 + Sat4 + SexOfSalesperson, data = survey)
+summary(model_sat)
+
+# Adjusted R2 = .3238
+# F = 176.7***
+# -- Customer loyalty = a + b1 +b2 + b3 +b4 +b5 + Error
+# -- Customer loyalty = 1.853*** + .324*** - .034 + .288*** + .052 - .113* 
+
+# -- Analyzing predicted and residual values -- #
+
+model_df <- model_sat$model
+model_df$predicted <- predict(model_sat)
+model_df$residuals <- residuals(model_sat)
+
+head(model_df)
+attach(model_df)
+
+
+# Conclusions
+# 1) Sat1 is the most important predictor (.324***) followed by Sat3 (.288***)
+# 2) Gender of the Sales person predicts Customer loyalty. 
+# Because the dummy variables are coded as 1 = female; 2 = male
+# and the coefficient is negative (-.113*), we conclude that customers tend to 
+# be less loyal when dealing with a male employee rather than with a female one.
 #Figure 7.3
 
-modelf7_3=lm(Custloyalty ~ Sat1 + Sat2 + Sat3 + Sat4 + SexOfSalesperson)
-modelf7_3
-summary(modelf7_3)
-coef(modelf7_3)
+
+
+
 
 #for standardised coefficients install and load QuantPsyc package
 #install.packages("QuantPsyc") -if not already installed
-library(QuantPsyc)
-lm.beta(modelf7_3)
+lm.beta(model_sat)
 
